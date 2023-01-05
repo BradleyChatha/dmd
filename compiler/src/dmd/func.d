@@ -359,6 +359,9 @@ extern (C++) class FuncDeclaration : Declaration
      */
     ObjcFuncDeclaration objc;
 
+    import dmd.ctfejit;
+    CTFEFunctionInfo ctfeInfo;
+
     extern (D) this(const ref Loc loc, const ref Loc endloc, Identifier ident, StorageClass storage_class, Type type, bool noreturn = false)
     {
         super(loc, ident);

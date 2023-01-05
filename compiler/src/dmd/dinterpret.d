@@ -63,6 +63,11 @@ import dmd.visitor;
  */
 public Expression ctfeInterpret(Expression e)
 {
+    import dmd.root.string;
+    import dmd.ctfejit;
+    if(e.loc.filename.toDString == "compilable/__temp_bc_test.d")
+        return ctfeInterpret2(e);
+
     switch (e.op)
     {
         case EXP.int64:

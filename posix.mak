@@ -29,6 +29,11 @@ test:
 	$(QUIET)$(MAKE) -C compiler/src -f posix.mak dmd
 	$(QUIET)$(MAKE) -C compiler/test -f Makefile
 
+bctest:
+	$(QUIET)$(MAKE) -C compiler/src -f posix.mak unittest
+	$(QUIET)$(MAKE) -C compiler/src -f posix.mak dmd
+	cd compiler/test; ./run.d compilable/__temp_bc_test.d
+
 html:
 	$(QUIET)$(MAKE) -C compiler/src -f posix.mak html
 
