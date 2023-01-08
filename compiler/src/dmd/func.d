@@ -361,6 +361,7 @@ extern (C++) class FuncDeclaration : Declaration
 
     import dmd.ctfejit;
     CTFEFunctionInfo ctfeInfo;
+    CTFEFunctionInfo* parentCTFEInfo; // Only for nested functions: Points to the top-level function's ctfeInfo
 
     extern (D) this(const ref Loc loc, const ref Loc endloc, Identifier ident, StorageClass storage_class, Type type, bool noreturn = false)
     {
