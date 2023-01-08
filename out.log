@@ -1,11 +1,9 @@
 /Library/Developer/CommandLineTools/usr/bin/make -C compiler/src -f posix.mak unittest
 ../../generated/build OS="osx" BUILD="release" MODEL="64" HOST_DMD="dmd" CXX="c++" AUTO_BOOTSTRAP="" DOCDIR="" STDDOC="" DOC_OUTPUT_DIR="" MAKE="/Library/Developer/CommandLineTools/usr/bin/make" VERBOSE="" ENABLE_RELEASE="" ENABLE_DEBUG="" ENABLE_ASSERTS="" ENABLE_LTO="" ENABLE_UNITTEST="" ENABLE_PROFILE="" ENABLE_COVERAGE="" DFLAGS="" unittest
-(DC) DMD-unittest
 (RUN) DMD-UNITTEST
 Success
 /Library/Developer/CommandLineTools/usr/bin/make -C compiler/src -f posix.mak dmd
 ../../generated/build OS="osx" BUILD="release" MODEL="64" HOST_DMD="dmd" CXX="c++" AUTO_BOOTSTRAP="" DOCDIR="" STDDOC="" DOC_OUTPUT_DIR="" MAKE="/Library/Developer/CommandLineTools/usr/bin/make" VERBOSE="" ENABLE_RELEASE="" ENABLE_DEBUG="" ENABLE_ASSERTS="" ENABLE_LTO="" ENABLE_UNITTEST="" ENABLE_PROFILE="" ENABLE_COVERAGE="" DFLAGS="" dmd
-(DC) DMD
 Success
 cd compiler/test; ./run.d compilable/__temp_bc_test.d
  ... compilable/__temp_bc_test.d     -fPIC ()
@@ -76,11 +74,11 @@ EXECUTE: CTFEOpcode(Data, ret)
         e1: int = 200
         e2: int = 100
 :: Expression
-    exp: EXP.int64 = 100
+    exp: EXP.int64 = 200
     type: int
     :: IntegerExp
 :: Expression
-    exp: EXP.int64 = 200
+    exp: EXP.int64 = 100
     type: int
     :: IntegerExp
 ^^ compileExpressionAsFunction
@@ -96,17 +94,17 @@ EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: []
 (before) STACK: []
 (after) LOCALS: []
-(after) STACK: [(i32)100]
+(after) STACK: [(i32)200]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: []
-(before) STACK: [(i32)100]
+(before) STACK: [(i32)200]
 (after) LOCALS: []
-(after) STACK: [(i32)100, (i32)200]
+(after) STACK: [(i32)200, (i32)100]
 --------------------------
 EXECUTE: CTFEOpcode(Data, div_i32)
 (before) LOCALS: []
-(before) STACK: [(i32)100, (i32)200]
+(before) STACK: [(i32)200, (i32)100]
 (after) LOCALS: []
 (after) STACK: [(i32)2]
 --------------------------
@@ -177,10 +175,14 @@ int c = 0;
 c = b + ret2() + c;
 pure nothrow @nogc @safe int nested()
 {
+pure nothrow @nogc @safe int nested2()
+{
 a = 2;
-return a * 100;
+return 100;
 }
-return c / f(2) + -1 + nested() + a;
+return a * nested2();
+}
+return c / f(2) + -1 + a + nested();
 
 :: Statement
     stmt: STMT.Compound = enum int A = 200;
@@ -191,10 +193,14 @@ int c = 0;
 c = b + ret2() + c;
 pure nothrow @nogc @safe int nested()
 {
+pure nothrow @nogc @safe int nested2()
+{
 a = 2;
-return a * 100;
+return 100;
 }
-return c / f(2) + -1 + nested() + a;
+return a * nested2();
+}
+return c / f(2) + -1 + a + nested();
 
 :: Statement
     stmt: STMT.Exp = enum int A = 200;
@@ -328,14 +334,14 @@ return c / f(2) + -1 + nested() + a;
         e1: int = a
         e2: int = 2
 :: Expression
-    exp: EXP.int64 = 2
-    type: int
-    :: IntegerExp
-:: Expression
     exp: EXP.variable = a
     type: int
     :: VarExp
         var: a
+:: Expression
+    exp: EXP.int64 = 2
+    type: int
+    :: IntegerExp
 :: emitStore
     exp: b
     blit: false
@@ -398,16 +404,16 @@ return c / f(2) + -1 + nested() + a;
         e1: int = b + ret2()
         e2: int = c
 :: Expression
-    exp: EXP.variable = c
-    type: int
-    :: VarExp
-        var: c
-:: Expression
     exp: EXP.add = b + ret2()
     type: int
     :: AddExp
         e1: int = b
         e2: int = ret2()
+:: Expression
+    exp: EXP.variable = b
+    type: int
+    :: VarExp
+        var: b
 :: Expression
     exp: EXP.call = ret2()
     type: int
@@ -417,10 +423,10 @@ return c / f(2) + -1 + nested() + a;
         args: 0
         direct: false
 :: Expression
-    exp: EXP.variable = b
+    exp: EXP.variable = c
     type: int
     :: VarExp
-        var: b
+        var: c
 :: emitStore
     exp: c
     blit: true
@@ -429,51 +435,46 @@ return c / f(2) + -1 + nested() + a;
 :: Statement
     stmt: STMT.Exp = pure nothrow @nogc @safe int nested()
 {
+pure nothrow @nogc @safe int nested2()
+{
 a = 2;
-return a * 100;
+return 100;
+}
+return a * nested2();
 }
 
 :: Expression
     exp: EXP.declaration = pure nothrow @nogc @safe int nested()
 {
+pure nothrow @nogc @safe int nested2()
+{
 a = 2;
-return a * 100;
+return 100;
+}
+return a * nested2();
 }
 
     type: void
     :: DeclarationExp
         decl: nested
 :: Statement
-    stmt: STMT.Return = return c / f(2) + -1 + nested() + a;
+    stmt: STMT.Return = return c / f(2) + -1 + a + nested();
 
 :: ReturnStatement
-    exp: c / f(2) + -1 + nested() + a
+    exp: c / f(2) + -1 + a + nested()
     caseDim: 0
 :: Expression
-    exp: EXP.add = c / f(2) + -1 + nested() + a
+    exp: EXP.add = c / f(2) + -1 + a + nested()
     type: int
     :: AddExp
-        e1: int = c / f(2) + -1 + nested()
-        e2: int = a
+        e1: int = c / f(2) + -1 + a
+        e2: int = nested()
 :: Expression
-    exp: EXP.variable = a
-    type: int
-    :: VarExp
-        var: a
-:: Expression
-    exp: EXP.add = c / f(2) + -1 + nested()
+    exp: EXP.add = c / f(2) + -1 + a
     type: int
     :: AddExp
         e1: int = c / f(2) + -1
-        e2: int = nested()
-:: Expression
-    exp: EXP.call = nested()
-    type: int
-    :: CallExp
-        e1: nested
-        func: nested
-        args: 0
-        direct: false
+        e2: int = a
 :: Expression
     exp: EXP.add = c / f(2) + -1
     type: int
@@ -481,15 +482,16 @@ return a * 100;
         e1: int = c / f(2)
         e2: int = -1
 :: Expression
-    exp: EXP.int64 = -1
-    type: int
-    :: IntegerExp
-:: Expression
     exp: EXP.div = c / f(2)
     type: int
     :: DivExp
         e1: int = c
         e2: int = f(2)
+:: Expression
+    exp: EXP.variable = c
+    type: int
+    :: VarExp
+        var: c
 :: Expression
     exp: EXP.call = f(2)
     type: int
@@ -503,13 +505,25 @@ return a * 100;
     type: int
     :: IntegerExp
 :: Expression
-    exp: EXP.variable = c
+    exp: EXP.int64 = -1
+    type: int
+    :: IntegerExp
+:: Expression
+    exp: EXP.variable = a
     type: int
     :: VarExp
-        var: c
+        var: a
+:: Expression
+    exp: EXP.call = nested()
+    type: int
+    :: CallExp
+        e1: nested
+        func: nested
+        args: 0
+        direct: false
 ^^ compileFunction
     info: CTFEFunctionInfo(22, 50, [c:2, a:0, b:1])
-    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, mul_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, call), CTFEOpcode(Data, local_load), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ld_func_ctx), CTFEOpcode(Data, call), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, call), CTFEOpcode(Data, local_load), CTFEOpcode(Data, div_i32), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
+    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, mul_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, call), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, call), CTFEOpcode(Data, div_i32), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, ld_func_ctx), CTFEOpcode(Data, call), CTFEOpcode(Data, add_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
 EXECUTE: CTFEOpcode(Data, nop)
 (before) LOCALS: [(i8Bool)false, (i8Bool)false, (i8Bool)false]
 (before) STACK: [(startOfFrame)const(StartOfStackFrame)()]
@@ -528,21 +542,21 @@ EXECUTE: CTFEOpcode(Data, local_store)
 (after) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
 (after) STACK: [(startOfFrame)const(StartOfStackFrame)()]
 --------------------------
-EXECUTE: CTFEOpcode(Data, ld_i32)
+EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
 (before) STACK: [(startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)1]
 --------------------------
-EXECUTE: CTFEOpcode(Data, local_load)
+EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)1]
 (after) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (localSlotRef)const(LocalSlotReference)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)1, (i32)2]
 --------------------------
 EXECUTE: CTFEOpcode(Data, mul_i32)
 (before) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (localSlotRef)const(LocalSlotReference)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)1, (i32)2]
 (after) LOCALS: [(i32)1, (i8Bool)false, (i8Bool)false]
 (after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2]
 --------------------------
@@ -568,11 +582,11 @@ EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)1, (i32)2, (i32)0]
 (before) STACK: [(startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i32)1, (i32)2, (i32)0]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2]
 --------------------------
 EXECUTE: CTFEOpcode(Data, call)
 (before) LOCALS: [(i32)1, (i32)2, (i32)0]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2]
 :: compileFunction
     func: ret2
     run: semantic3done
@@ -607,7 +621,7 @@ return a;
             range: null
             maybes: null
             offset: 0
-            seq: 85
+            seq: 86
             align: structalign_t(1234, false)
             assign: 0
 :: Expression
@@ -638,52 +652,53 @@ return a;
         var: a
 ^^ compileFunction
     info: CTFEFunctionInfo(50, 56, [a:0])
-    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
+    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_store), CTFEOpcode(Data,compilable/__temp_bc_test.d(13): Error: [CTFE] Unable to compile DeclarationExp - Unsupported: 
+ local_load), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
 EXECUTE: CTFEOpcode(Data, nop)
 (before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)()]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)()]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)()]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)()]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)(), (i32)200]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)(), (i32)200]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_store)
 (before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)(), (i32)200]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)(), (i32)200]
 (after) LOCALS: [(i32)200]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)()]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)()]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)200]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)()]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i32)200]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(3)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)(), (i32)200]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ret)
 (before) LOCALS: [(i32)200]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(3)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (startOfFrame)const(StartOfStackFrame)(), (i32)200]
 (after) LOCALS: [(i32)1, (i32)2, (i32)0]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (localSlotRef)const(LocalSlotReference)(3)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (i32)200]
+--------------------------
+EXECUTE: CTFEOpcode(Data, add_i32)
+(before) LOCALS: [(i32)1, (i32)2, (i32)0]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)2, (i32)200]
+(after) LOCALS: [(i32)1, (i32)2, (i32)0]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)1, (i32)2, (i32)0]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (localSlotRef)const(LocalSlotReference)(3)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202]
 (after) LOCALS: [(i32)1, (i32)2, (i32)0]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (localSlotRef)const(LocalSlotReference)(3), (localSlotRef)const(LocalSlotReference)(1)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)0]
 --------------------------
 EXECUTE: CTFEOpcode(Data, add_i32)
 (before) LOCALS: [(i32)1, (i32)2, (i32)0]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (localSlotRef)const(LocalSlotReference)(3), (localSlotRef)const(LocalSlotReference)(1)]
-(after) LOCALS: [(i32)1, (i32)2, (i32)0]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (i32)202]
---------------------------
-EXECUTE: CTFEOpcode(Data, add_i32)
-(before) LOCALS: [(i32)1, (i32)2, (i32)0]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(2), (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)0]
 (after) LOCALS: [(i32)1, (i32)2, (i32)0]
 (after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202]
 --------------------------
@@ -697,27 +712,213 @@ EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)1, (i32)2, (i32)202]
 (before) STACK: [(startOfFrame)const(StartOfStackFrame)()]
 (after) LOCALS: [(i32)1, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202]
 --------------------------
-EXECUTE: CTFEOpcode(Data, ld_func_ctx)
+EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: [(i32)1, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202]
 (after) LOCALS: [(i32)1, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)2]
 --------------------------
 EXECUTE: CTFEOpcode(Data, call)
 (before) LOCALS: [(i32)1, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)2]
+:: compileFunction
+    func: f
+    run: semantic3done
+:: Statement
+    stmt: STMT.Compound = return a;
+
+:: Statement
+    stmt: STMT.Return = return a;
+
+:: ReturnStatement
+    exp: a
+    caseDim: 0
+:: Expression
+    exp: EXP.variable = a
+    type: int
+    :: VarExp
+        var: a
+^^ compileFunction
+    info: CTFEFunctionInfo(56, 61, [a:0])
+    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
+EXECUTE: CTFEOpcode(Data, nop)
+(before) LOCALS: [(i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(after) LOCALS: [(i8Bool)false]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_store)
+(before) LOCALS: [(i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(after) LOCALS: [(i32)2]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)()]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_load)
+(before) LOCALS: [(i32)2]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)()]
+(after) LOCALS: [(i32)2]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+--------------------------
+EXECUTE: CTFEOpcode(Data, ret)
+(before) LOCALS: [(i32)2]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)2]
+--------------------------
+EXECUTE: CTFEOpcode(Data, div_i32)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)202, (i32)2]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101]
+--------------------------
+EXECUTE: CTFEOpcode(Data, ld_i32)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (i32)-1]
+--------------------------
+EXECUTE: CTFEOpcode(Data, add_i32)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (i32)-1]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)100]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_load)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)100]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)100, (i32)1]
+--------------------------
+EXECUTE: CTFEOpcode(Data, add_i32)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)100, (i32)1]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101]
+--------------------------
+EXECUTE: CTFEOpcode(Data, ld_func_ctx)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101]
+(after) LOCALS: [(i32)1, (i32)2, (i32)202]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (funcContext)const(FuncContext)(0)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, call)
+(before) LOCALS: [(i32)1, (i32)2, (i32)202]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (funcContext)const(FuncContext)(0)]
 :: compileFunction
     func: nested
     run: semantic3done
 :: Statement
+    stmt: STMT.Compound = pure nothrow @nogc @safe int nested2()
+{
+a = 2;
+return 100;
+}
+return a * nested2();
+
+:: Statement
+    stmt: STMT.Compound = pure nothrow @nogc @safe int nested2()
+{
+a = 2;
+return 100;
+}
+return a * nested2();
+
+:: Statement
+    stmt: STMT.Exp = pure nothrow @nogc @safe int nested2()
+{
+a = 2;
+return 100;
+}
+
+:: Expression
+    exp: EXP.declaration = pure nothrow @nogc @safe int nested2()
+{
+a = 2;
+return 100;
+}
+
+    type: void
+    :: DeclarationExp
+        decl: nested2
+:: Statement
+    stmt: STMT.Return = return a * nested2();
+
+:: ReturnStatement
+    exp: a * nested2()
+    caseDim: 0
+:: Expression
+    exp: EXP.mul = a * nested2()
+    type: int
+    :: MulExp
+        e1: int = a
+        e2: int = nested2()
+:: Expression
+    exp: EXP.variable = a
+    type: int
+    :: VarExp
+        var: a
+:: Expression
+    exp: EXP.call = nested2()
+    type: int
+    :: CallExp
+        e1: nested2
+        func: nested2
+        args: 0
+        direct: false
+^^ compileFunction
+    info: CTFEFunctionInfo(61, 71, [__ctfe_context_pointer:0])
+    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, local_load_ind), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ld_func_ctx), CTFEOpcode(Data, call), CTFEOpcode(Data, mul_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
+EXECUTE: CTFEOpcode(Data, nop)
+(before) LOCALS: [(i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(i8Bool)false]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_store)
+(before) LOCALS: [(i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)()]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_load)
+(before) LOCALS: [(funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)()]
+(after) LOCALS: [(funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_load_ind)
+(before) LOCALS: [(funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_load)
+(before) LOCALS: [(funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1]
+(after) LOCALS: [(funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (funcContext)const(FuncContext)(0)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, ld_func_ctx)
+(before) LOCALS: [(funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (funcContext)const(FuncContext)(0), (funcContext)const(FuncContext)(3)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, call)
+(before) LOCALS: [(funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (funcContext)const(FuncContext)(0), (funcContext)const(FuncContext)(3)]
+:: compileFunction
+    func: nested2
+    run: semantic3done
+:: Statement
     stmt: STMT.Compound = a = 2;
-return a * 100;
+return 100;
 
 :: Statement
     stmt: STMT.Compound = a = 2;
-return a * 100;
+return 100;
 
 :: Statement
     stmt: STMT.Exp = a = 2;
@@ -738,199 +939,105 @@ return a * 100;
     :: VarExp
         var: a
 :: Statement
-    stmt: STMT.Return = return a * 100;
+    stmt: STMT.Return = return 100;
 
 :: ReturnStatement
-    exp: a * 100
+    exp: 100
     caseDim: 0
-:: Expression
-    exp: EXP.mul = a * 100
-    type: int
-    :: MulExp
-        e1: int = a
-        e2: int = 100
 :: Expression
     exp: EXP.int64 = 100
     type: int
     :: IntegerExp
-:: Expression
-    exp: EXP.variable = a
-    type: int
-    :: VarExp
-        var: a
 ^^ compileFunction
-    info: CTFEFunctionInfo(56, 67, [__ctfe_context_pointer:0])
-    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, local_store), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, local_store_ind), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, local_load_ind), CTFEOpcode(Data, mul_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
+    info: CTFEFunctionInfo(71, 80, [__ctfe_context_pointer:0, __ctfe_context_pointer:1])
+    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_store), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, local_load), CTFEOpcode(Data, local_store_ind), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
 EXECUTE: CTFEOpcode(Data, nop)
-(before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
-(after) LOCALS: [(i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+(before) LOCALS: [(i8Bool)false, (i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0), (funcContext)const(FuncContext)(3)]
+(after) LOCALS: [(i8Bool)false, (i8Bool)false]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0), (funcContext)const(FuncContext)(3)]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_store)
-(before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)()]
+(before) LOCALS: [(i8Bool)false, (i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0), (funcContext)const(FuncContext)(3)]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (i8Bool)false]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+--------------------------
+EXECUTE: CTFEOpcode(Data, local_store)
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (i8Bool)false]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)()]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ld_i32)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)()]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)()]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_load)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)2]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)2, (localSlotRef)const(LocalSlotReference)(3)]
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)2, (funcContext)const(FuncContext)(0)]
 --------------------------
 EXECUTE: CTFEOpcode(Data, local_store_ind)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)2, (localSlotRef)const(LocalSlotReference)(3)]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)()]
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)2, (funcContext)const(FuncContext)(0)]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, 201
+(startOfFrame)const(StartOfStackFrame)()]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ld_i32)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)()]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100]
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)()]
+(after) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)100]
 --------------------------
-EXECUTE: CTFEOpcode(Data, local_load)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100]
+EXECUTE: CTFEOpcode(Data, ret)
+(before) LOCALS: [(funcContext)const(FuncContext)(3), (funcContext)const(FuncContext)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (startOfFrame)const(StartOfStackFrame)(), (i32)100]
 (after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100, (localSlotRef)const(LocalSlotReference)(3)]
---------------------------
-EXECUTE: CTFEOpcode(Data, local_load_ind)
-(before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100, (localSlotRef)const(LocalSlotReference)(3)]
-(after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100, (localSlotRef)const(LocalSlotReference)(0)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (i32)100]
 --------------------------
 EXECUTE: CTFEOpcode(Data, mul_i32)
 (before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)100, (localSlotRef)const(LocalSlotReference)(0)]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)1, (i32)100]
 (after) LOCALS: [(funcContext)const(FuncContext)(0)]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)200]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)100]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ret)
 (before) LOCALS: [(funcContext)const(FuncContext)(0)]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (startOfFrame)const(StartOfStackFrame)(), (i32)200]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (startOfFrame)const(StartOfStackFrame)(), (i32)100]
 (after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (i32)100]
 --------------------------
-EXECUTE: CTFEOpcode(Data, ld_i32)
+EXECUTE: CTFEOpcode(Data, add_i32)
 (before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)101, (i32)100]
 (after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1]
---------------------------
-EXECUTE: CTFEOpcode(Data, ld_i32)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (i32)2]
---------------------------
-EXECUTE: CTFEOpcode(Data, call)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (i32)2]
-:: compileFunction
-    func: f
-    run: semantic3done
-:: Statement
-    stmt: STMT.Compound = return a;
-
-:: Statement
-    stmt: STMT.Return = return a;
-
-:: ReturnStatement
-    exp: a
-    caseDim: 0
-:: Expression
-    exp: EXP.variable = a
-    type: int
-    :: VarExp
-        var: a
-^^ compileFunction
-    info: CTFEFunctionInfo(67, 72, [a:0])
-    opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, local_store), CTFEOpcode(Data, local_load), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
-EXECUTE: CTFEOpcode(Data, nop)
-(before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
-(after) LOCALS: [(i8Bool)false]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
---------------------------
-EXECUTE: CTFEOpcode(Data, local_store)
-(before) LOCALS: [(i8Bool)false]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)(), (i32)2]
-(after) LOCALS: [(i32)2]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)()]
---------------------------
-EXECUTE: CTFEOpcode(Data, local_load)
-(before) LOCALS: [(i32)2]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)()]
-(after) LOCALS: [(i32)2]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(3)]
+(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)201]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ret)
-(before) LOCALS: [(i32)2]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(3)]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (localSlotRef)const(LocalSlotReference)(3)]
---------------------------
-EXECUTE: CTFEOpcode(Data, local_load)
 (before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (localSlotRef)const(LocalSlotReference)(3)]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (localSlotRef)const(LocalSlotReference)(3), (localSlotRef)const(LocalSlotReference)(2)]
---------------------------
-EXECUTE: CTFEOpcode(Data, div_i32)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (localSlotRef)const(LocalSlotReference)(3), (localSlotRef)const(LocalSlotReference)(2)]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (i32)101]
---------------------------
-EXECUTE: CTFEOpcode(Data, add_i32)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)-1, (i32)101]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)100]
---------------------------
-EXECUTE: CTFEOpcode(Data, add_i32)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)200, (i32)100]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)300]
---------------------------
-EXECUTE: CTFEOpcode(Data, add_i32)
-(before) LOCALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (localSlotRef)const(LocalSlotReference)(0), (i32)300]
-(after) LOCALS: [(i32)2, (i32)2, (i32)202]
-(after) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)302]
---------------------------
-EXECUTE: CTFEOpcode(Data, ret)
-(before) LOC302
-ALS: [(i32)2, (i32)2, (i32)202]
-(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)302]
+(before) STACK: [(startOfFrame)const(StartOfStackFrame)(), (i32)201]
 (after) LOCALS: []
-(after) STACK: [(i32)302]
+(after) STACK: [(i32)201]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ret)
 (before) LOCALS: []
-(before) STACK: [(i32)302]
+(before) STACK: [(i32)201]
 :: ctfeInterpret2
     exp: ret()
-    value: 302
+    value: 201
 :: compileExpressionAsFunction
-    exp: 302
+    exp: 201
 :: Expression
-    exp: EXP.int64 = 302
+    exp: EXP.int64 = 201
     type: int
     :: IntegerExp
 ^^ compileExpressionAsFunction
-    info: CTFEFunctionInfo(72, 76, [])
+    info: CTFEFunctionInfo(80, 84, [])
     opcodes: [CTFEOpcode(Data, nop), CTFEOpcode(Data, ld_i32), CTFEOpcode(Data, ret), CTFEOpcode(Data, nop)]
 EXECUTE: CTFEOpcode(Data, nop)
 (before) LOCALS: []
@@ -942,14 +1049,14 @@ EXECUTE: CTFEOpcode(Data, ld_i32)
 (before) LOCALS: []
 (before) STACK: []
 (after) LOCALS: []
-(after) STACK: [(i32)302]
+(after) STACK: [(i32)201]
 --------------------------
 EXECUTE: CTFEOpcode(Data, ret)
 (before) LOCALS: []
-(before) STACK: [(i32)302]
+(before) STACK: [(i32)201]
 :: ctfeInterpret2
-    exp: 302
-    value: 302
+    exp: 201
+    value: 201
 
 ==============================
 Test 'compilable/__temp_bc_test.d' failed: Expected rc == 0, but exited with rc == 1

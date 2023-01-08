@@ -645,8 +645,8 @@ private extern (C++) final class OpcodeCompiler : Visitor
             writeln("        e1: ", exp.e1.type, " = ", exp.e1);
             writeln("        e2: ", exp.e2.type, " = ", exp.e2);
 
-            this.visit(exp.e2);
             this.visit(exp.e1);
+            this.visit(exp.e2);
             if(this.hadErrors())
             {
                 exp.error("[CTFE] Unable to compile _ - Compilation of sub expression(s) failed");
@@ -1052,7 +1052,7 @@ private:
         writeln("            align: ", decl.alignment);
         writeln("            assign: ", decl.canassign);
 
-        if(cast(int)decl.storage_class == 134217728)
+        if(decl.storage_class & STC.manifest)
             return;
 
         switch(decl._init.kind)
@@ -1422,6 +1422,9 @@ mixin template GenerateBinaryArithmeticHandler(alias InstructionDataType)
     alias Instruction    = InstructionFromDataType!InstructionDataType;
     alias BinaryArithUda = InstructionUda!(Instruction, BinaryArith);
 
+    // NOTE: Normally you need to push values in reverse order in a stack-based system.
+    //       However; we *must* evaluate binary expressions in the same order that the D AST presents them in
+    //       So - `i1` is actually the right hand param, and `i2` is actually the left hand param
     mixin("
         @Instruction void opcode_"~InstructionFuncName!Instruction~"(
             InstructionDataType op,
@@ -1430,7 +1433,7 @@ mixin template GenerateBinaryArithmeticHandler(alias InstructionDataType)
             scope BinaryArithUda.Type* r1,
         )
         {
-            *r1 = cast(BinaryArithUda.Type)(i1 "~BinaryArithUda.operation~" i2);
+            *r1 = cast(BinaryArithUda.Type)(i2 "~BinaryArithUda.operation~" i1);
         }
     ");
 }
@@ -1554,7 +1557,7 @@ void _opcode_call(CTFEOpcode.Call op, scope ref CTFEFunctionInfo funcInfo, scope
     }
 
     foreach(i; 0..op.argCount)
-        argSlice[i] = vm.pop();
+        argSlice[i] = vm.popFollowRef();
 
     CTFEValue retValue;
     vm.call(op.func, argSlice, retValue);
@@ -1563,17 +1566,18 @@ void _opcode_call(CTFEOpcode.Call op, scope ref CTFEFunctionInfo funcInfo, scope
 
 void _opcode_ret(CTFEOpcode.Return op, scope out CTFEValue r1, scope ref CTFEVirtualMachine vm)
 {
-    r1 = vm.pop();
+    r1 = vm.popFollowRef();
 }
 
 void _opcode_local_load(CTFEOpcode.LocalLoad op, const size_t localStartIndex, scope ref CTFEVirtualMachine vm)
 {
-    vm.push(CTFEValue(CTFEValue.LocalSlotReference(localStartIndex + op.localSlotIndex)));
+    // vm.push(CTFEValue(CTFEValue.LocalSlotReference(localStartIndex + op.localSlotIndex)));
+    vm.push(vm.getLocal(localStartIndex + op.localSlotIndex));
 }
 
 void _opcode_local_store(CTFEOpcode.LocalStore op, const size_t localStartIndex, scope ref CTFEVirtualMachine vm)
 {
-    auto value = vm.pop();
+    auto value = vm.popFollowRef();
     vm.setLocal(localStartIndex + op.localSlotIndex, value);
 }
 
@@ -1582,7 +1586,8 @@ void _opcode_local_load_ind(CTFEOpcode.LocalLoad op, scope ref CTFEVirtualMachin
     auto ctx = vm.popFollowRef();
     assert(ctx.type == CTFEValue.Type.funcContext);
 
-    vm.push(CTFEValue(CTFEValue.LocalSlotReference(ctx.value.funcContext.localStartIndex + op.localSlotIndex)));
+    // vm.push(CTFEValue(CTFEValue.LocalSlotReference(ctx.value.funcContext.localStartIndex + op.localSlotIndex)));
+    vm.push(vm.getLocal(ctx.value.funcContext.localStartIndex + op.localSlotIndex));
 }
 
 void _opcode_local_store_ind(CTFEOpcode.LocalStore op, scope ref CTFEVirtualMachine vm)

@@ -7,8 +7,8 @@ ld_i32 200
 ret 
 nop END EXPRESSION AS FUNCTION - 200
 nop START EXPRESSION AS FUNCTION - 200 / 100
-ld_i32 100
 ld_i32 200
+ld_i32 100
 div_i32 
 ret 
 nop END EXPRESSION AS FUNCTION - 200 / 100
@@ -23,28 +23,28 @@ nop END EXPRESSION AS FUNCTION - ret()
 nop START FUNCTION - ret
 ld_i32 1
 local_store 0
-ld_i32 2
 local_load 0
+ld_i32 2
 mul_i32 
 local_store 1
 ld_i32 0
 local_store 2
-local_load 2
-call 0, ret2
 local_load 1
+call 0, ret2
 add_i32 
+local_load 2
 add_i32 
 local_store 2
-local_load 0
-ld_func_ctx 
-call 1, nested
-ld_i32 -1
+local_load 2
 ld_i32 2
 call 1, f
-local_load 2
 div_i32 
+ld_i32 -1
 add_i32 
+local_load 0
 add_i32 
+ld_func_ctx 
+call 1, nested
 add_i32 
 ret 
 nop END FUNCTION - ret
@@ -54,19 +54,27 @@ local_store 0
 local_load 0
 ret 
 nop END FUNCTION - ret2
-nop START FUNCTION - nested
-local_store 0
-ld_i32 2
-local_load 0
-local_store_ind 0
-ld_i32 100
-local_load 0
-local_load_ind 0
-mul_i32 
-ret 
-nop END FUNCTION - nested
 nop START FUNCTION - f
 local_store 0
 local_load 0
 ret 
 nop END FUNCTION - f
+nop START FUNCTION - nested
+local_store 0
+local_load 0
+local_load_ind 0
+local_load 0
+ld_func_ctx 
+call 2, nested2
+mul_i32 
+ret 
+nop END FUNCTION - nested
+nop START FUNCTION - nested2
+local_store 0
+local_store 1
+ld_i32 2
+local_load 1
+local_store_ind 0
+ld_i32 100
+ret 
+nop END FUNCTION - nested2

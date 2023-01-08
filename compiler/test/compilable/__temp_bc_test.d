@@ -10,8 +10,12 @@ int ret()
 
     int nested()
     {
-        a = 2;
-        return a * 100;
+        int nested2()
+        {
+            a = 2;
+            return 100;
+        }
+        return a * nested2();
     }
 
     return (c / f(2) + (B - 3)) + nested() + a;
